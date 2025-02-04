@@ -4,11 +4,17 @@
 
 package frc.robot;
 
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.MutDistance;
+import edu.wpi.first.units.measure.MutLinearVelocity;
+import edu.wpi.first.units.measure.MutVoltage;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
+import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
 
-public class RomiDrivetrain {
+public class RomiDrivetrain implements SysIdDrivable {
   private static final double kCountsPerRevolution = 1440.0;
   private static final double kWheelDiameterInch = 2.75591; // 70 mm
 
@@ -22,6 +28,9 @@ public class RomiDrivetrain {
   private final Encoder m_leftEncoder = new Encoder(4, 5);
   private final Encoder m_rightEncoder = new Encoder(6, 7);
 
+  private final MutVoltage _dummyVoltage = Units.Volts.mutable(0);
+	private final MutDistance _dummyDistance = Units.Meters.mutable(0);
+	private final MutLinearVelocity _dummyVelocity = Units.MetersPerSecond.mutable(0);
   // Set up the differential drive controller
   private final DifferentialDrive m_diffDrive =
       new DifferentialDrive(m_leftMotor::set, m_rightMotor::set);
@@ -53,4 +62,26 @@ public class RomiDrivetrain {
   public double getRightDistanceInch() {
     return m_rightEncoder.getDistance();
   }
+  public void logEntry(SysIdRoutineLog log) {
+		log.motor("drive-left")
+				.voltage(_dummyVoltage.mut_replace(
+						m_leftMotor.get() * RobotController.getBatteryVoltage(),
+						Units.Volts))
+				.linearPosition(
+						_dummyDistance.mut_replace(m_leftEncoder.getDistance(),
+								Units.Meters))
+				.linearVelocity(
+						_dummyVelocity.mut_replace(m_leftEncoder.getRate(),
+								Units.MetersPerSecond));
+		log.motor("drive-right")
+				.voltage(_dummyVoltage
+						.mut_replace(m_rightMotor.get() * RobotController
+								.getBatteryVoltage(), Units.Volts))
+				.linearPosition(
+						_dummyDistance.mut_replace(m_rightEncoder.getDistance(),
+								Units.Meters))
+				.linearVelocity(
+						_dummyVelocity.mut_replace(m_rightEncoder.getRate(),
+								Units.MetersPerSecond));
+	}
 }

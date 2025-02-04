@@ -8,6 +8,10 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 /**
  * The methods in this class are called automatically corresponding to each mode, as described in
@@ -21,7 +25,9 @@ public class Robot extends TimedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
+
   private final RomiDrivetrain m_drivetrain = new RomiDrivetrain();
+  private SendableChooser<Command> m_testChooser = buildTestChooser();
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -107,8 +113,36 @@ public class Robot extends TimedRobot {
   /** This function is called once when test mode is enabled. */
   @Override
   public void testInit() {
-    System.out.println ("test innit");
+    System.out.println ("test innit");CommandScheduler.getInstance().cancelAll();
+
+		Command command = m_testChooser.getSelected();
+		if (command != null) {
+			command.schedule();
+		}
   }
+  protected SendableChooser<Command> buildTestChooser() {
+		SysIdRoutine sysidFactory = new SysIdRoutine(new SysIdRoutine.Config(),
+				new SysIdRoutine.Mechanism(
+						m_drivetrain::setVoltage,
+						m_drivetrain::logEntry,
+						m_drivetrain));
+
+		SendableChooser<Command> chooser = new SendableChooser<>();
+
+		chooser.setDefaultOption("Quasistatic, Forward",
+				sysidFactory.quasistatic(Direction.kForward));
+		chooser.addOption("Quasistatic, Reverse",
+				sysidFactory.quasistatic(Direction.kReverse));
+		chooser.addOption("Dynamic, Forward",
+				sysidFactory.dynamic(Direction.kForward));
+		chooser.addOption("Dynamic, Reverse",
+				sysidFactory.dynamic(Direction.kReverse));
+
+		//// SmartDashboard.putData(chooser);
+		SmartDashboard.putData("Test Mode Commands", chooser);
+		return chooser;
+	}
+
 
   /** This function is called periodically during test mode. */
   @Override
